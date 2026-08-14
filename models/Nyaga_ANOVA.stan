@@ -3,38 +3,38 @@ data{
     int Nt;
     int Ns;
 
-    int TP[N];
-    int Dis[N];
-    int TN[N];
-    int NDis[N];
-    int Study[N];
-    int Test[N];
+    array[N] int TP;
+    array[N] int Dis;
+    array[N] int TN;
+    array[N] int NDis;
+    array[N] int Study;
+    array[N] int Test;
 
 }
 parameters{
     matrix[2, Nt] logitmu;
-    vector[Ns] nu[2];
-    matrix[Ns, Nt] delta[2];
-    vector<lower=0>[Nt] tau[2]; //*
-    vector<lower=0>[2] sigmab; 
+    array[2] vector[Ns] nu;
+    array[2] matrix[Ns, Nt] delta;
+    array[2] vector<lower=0>[Nt] tau;
+    vector<lower=0>[2] sigmab;
     real<lower=-1, upper=1> rho;
 }
 
 transformed parameters{
-    matrix[Ns, 2] p_i[Nt];
+    array[Nt] matrix[Ns, 2] p_i;
     matrix[2, Nt] MU;
-    matrix[Nt,Nt] RD[2];
+    array[2] matrix[Nt,Nt] RD;
     vector[Nt] DOR;
     vector[Nt] S;
     matrix[Nt, Nt] A;
     matrix[Nt, Nt] B;
     matrix[Nt, Nt] C;
 
-    vector<lower=0>[Nt] tausq[2];
+    array[2] vector<lower=0>[Nt] tausq;
     vector<lower=0>[2] sigmabsq;
 
-    matrix[Nt, Nt] sigmasq[2];
-    matrix[Nt, Nt] rhow[2];
+    array[2] matrix[Nt, Nt] sigmasq;
+    array[2] matrix[Nt, Nt] rhow;
 
 
     for (i in 1:Ns){

@@ -8,16 +8,9 @@ source("scripts/dor_table.R")
 source("scripts/league_table.R")
 source("scripts/mu_table.R")
 
-#install and setup rstan and packages needed
-#install.packages("rstan", repos = "https://cloud.r-project.org/", dependencies = TRUE)
-
-library(rstan)  # Load the rstan package for fitting Bayesian models with Stan
-library(readxl) # Load the readxl package for importing Excel files
-library(writexl)# Load the readxl package for exporting in Excel files
-
-#setup rstan
-options(mc.cores = parallel::detectCores()) # Allow Stan to use all available CPU cores to run chains in parallel
-rstan_options(auto_write = TRUE) # Save compiled Stan models automatically to avoid recompiling them
+library(cmdstanr)  # Load the cmdstanr package for fitting Bayesian models with Stan
+library(readxl)    # Load the readxl package for importing Excel files
+library(writexl)   # Load the writexl package for exporting in Excel files
 
 # Import the "data" worksheet from the Excel file
 dli<-read_excel("data/26045406.xlsx")
@@ -60,15 +53,17 @@ describe_dta_network(dli) #where dli is the original dataset
 
 # Make sure that Nyaga_ANOVA.stan is located in the models directory
 # Fit the Bayesian diagnostic test accuracy model
-fit_model <- stan(file = 'models/Nyaga_ANOVA.stan',
-                 data = dat,   # Provide the data list prepared above
-                 thin=10,      # Keep every 10th posterior draw to reduce the size of the saved output
-                 warmup=100,   # Number of iterations discarded as warm-up
-                 iter=2000,    # Total number of iterations per chain, including warm-up
-                 chains=2)     # Number of independent Markov chains
+model <- cmdstan_model('models/Nyaga_ANOVA.stan')
+fit_model <- model$sample(
+  data = dat,
+  thin = 10,
+  iter_warmup = 100,
+  iter_sampling = 1900,
+  chains = 2
+)
 
 # Extract the summary statistics from the fitted Stan model
-model_summary <- summary(fit_model)
+model_summary <- fit_model$summary()
 
 # Keep only the summary matrix containing parameter estimates,
 # standard deviations, quantiles, and diagnostic statistics
@@ -83,14 +78,14 @@ df2$title <- rownames(df2)
 # Export the model summary as a semicolon-separated CSV-style text file
 write.table(
   df2,
-  file = "G:/My Drive/Results_date.csv",
+  file = "Results_date.csv",
   sep = ";")
 
 # Save in excel formatted file
 writexl::write_xlsx(
   df2,
   path = paste0(
-    "C:/Users/sofia/Dropbox/Argie_Course DTA/Results_",
+    "Results_",
     format(Sys.Date(), "%Y-%m-%d"),
     ".xlsx"
   )
@@ -112,50 +107,45 @@ save(
 # SENSITIVITY AND SPECIFICITY------------------------------------
 #Have a look at sensitivity and specificity estimates
 #mu_table function
-results_table<-summary(
-  fit_model,
-  pars = c("MU"),
+results_table <- fit_model$summary(
+  variables = c("MU"),
   probs = c(0.025, 0.5, 0.975)
-)$summary
+)
 
 mu_table(results_table)
 
 
 #HETEROGENEITY parameters------------------------------------
 #het_table function
-results_table_het<-summary(
-  fit_model,
-  pars = c("tausq","sigmabsq"),
+results_table_het <- fit_model$summary(
+  variables = c("tausq","sigmabsq"),
   probs = c(0.025, 0.5, 0.975)
-)$summary
+)
 
 results_table_het
 het_table(results_table_het)
 
 #DOR PARAMETER------------------------------------
 #dor_table function
-results_table_DOR<-summary(
-  fit_model,
-  pars = c("DOR"),
+results_table_DOR <- fit_model$summary(
+  variables = c("DOR"),
   probs = c(0.025, 0.5, 0.975)
-)$summary
+)
 
 dor_table(results_table_DOR)
 
 #Superiority index
-Sk_index_table<-summary(
-  fit_model,
-  pars = c("S"),
+Sk_index_table <- fit_model$summary(
+  variables = c("S"),
   probs = c(0.025, 0.5, 0.975)
-)$summary
+)
 
 Sk_index_table
 #Create a LEAGUE TABLE------------------------------------
-results_table_league<-summary(
-  fit_model,
-  pars = c("RD"), #relative ratio (sens_test2/sens_test1)
+results_table_league <- fit_model$summary(
+  variables = c("RD"), #relative ratio (sens_test2/sens_test1)
   probs = c(0.025, 0.5, 0.975)
-)$summary
+)
 
 lt<-league_table_dta(dat,results_table_league)
 View(lt$sensitivity$table)
@@ -167,12 +157,12 @@ writexl::write_xlsx(data.frame(lt$specificity$table),"league_table_spec.xlsx") #
 # Assess convergence------------------------------------
 
 # Examine trace plots for the main parameters
-traceplot(fit_model, pars = c("MU"))
-traceplot(fit_model, pars = c("sigmabsq"))
-traceplot(fit_model, pars = c("tausq"))
+fit_model$draws(variables = c("MU")) |> bayesplot::mcmc_trace()
+fit_model$draws(variables = c("sigmabsq")) |> bayesplot::mcmc_trace()
+fit_model$draws(variables = c("tausq")) |> bayesplot::mcmc_trace()
 
-# Display the distribution of Rhat values
-stan_rhat(fit_model)
+# Display convergence diagnostics
+fit_model$cmdstan_diagnose()
 
 # Identify parameters with possible convergence problems
 #diagnostics <- summary(fit_model)$summary

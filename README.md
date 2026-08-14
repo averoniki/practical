@@ -1,69 +1,141 @@
-# Practical — Setup and Run Instructions
+# Diagnostic Test Accuracy (DTA) Practical
 
-This project uses `renv` to manage R package dependencies. Follow these steps to set up and run the project in RStudio.
+A hands-on practical for learning Bayesian meta-analysis of diagnostic test accuracy using Stan.
 
-## Prerequisites
-- R (recommended: same major.minor recorded in `renv.lock`, e.g. 4.5.x)
-- RStudio (optional but recommended)
-- Git (to clone the repository)
+## What This Project Does
 
-## Quick start (recommended)
-1. Clone the repository and change into the project directory:
+This practical teaches you how to fit Bayesian models to diagnostic test accuracy data. The scripts will:
+- Load and prepare diagnostic test data
+- Fit a Bayesian hierarchical model using Stan
+- Calculate sensitivity, specificity, and other diagnostic measures
+- Create forest plots and league tables for comparing tests
+
+## Getting Started
+
+### Step 1: Install Prerequisites (First Time Only)
+
+You need:
+- **R** (version 4.5 or later) — download from [r-project.org](https://www.r-project.org/)
+- **Xcode Command Line Tools** (macOS only) — open Terminal and run:
+  ```bash
+  xcode-select --install
+  ```
+
+### Step 2: Clone the Repository
 
 ```bash
 git clone <repo-url>
 cd Practical
 ```
 
-2. Open R or RStudio in the project directory.
+### Step 3: Restore Project Packages
 
-3. Install `renv` (if needed) and restore the project library from the lockfile:
+Open R or RStudio in the project directory and run:
 
 ```r
-install.packages("renv")    # run once per machine
-renv::restore()
+install.packages("renv")     # Install renv (first time only)
+renv::restore()              # Restore all project packages
 ```
 
-4. Restart the R session (RStudio: Session -> Restart R) after `renv::restore()` completes.
+This downloads all the packages you need. It may take a few minutes.
+
+After it finishes, restart R:
+- **RStudio:** Session → Restart R
+- **Terminal R:** exit and restart R
+
+### Step 4: Run the Main Practical
+
+In R, run:
+
+```r
+source("scripts/DTA_Practical_v2.R")
+```
+
+Or from Terminal:
 
 ```bash
-Rscript DTA_Practical_v2.R
+Rscript scripts/DTA_Practical_v2.R
 ```
 
-## Files to commit
-- `renv.lock` — commit this file to version control (required).
-- `renv/activate.R` and `.Rprofile` (if present) — commit if they were generated/modified.
+The script will:
+1. Load the diagnostic test data
+2. Compile the Bayesian model (takes ~1 minute)
+3. Run the analysis (takes ~5 minutes)
+4. Save results as CSV and Excel files to your project folder
 
-Do NOT commit `renv/library/` (the per-project package cache) — add it to `.gitignore` if not already ignored.
+**Output files:**
+- `Results_date.csv` — summary statistics
+- `Results_YYYY-MM-DD.xlsx` — Excel file with results
+- `league_table_sens.xlsx` and `league_table_spec.xlsx` — comparison tables
+
+## Project Structure
+
+```
+Practical/
+├── README.md                    # This file
+├── scripts/                     # R scripts to run
+│   ├── DTA_Practical_v2.R      # Main practical (start here!)
+│   └── [helper scripts]        # Functions for plots and tables
+├── models/                      # Stan models
+│   └── Nyaga_ANOVA.stan        # Bayesian diagnostic test accuracy model
+├── data/                        # Input data files
+│   └── 26045406.xlsx           # Example diagnostic test data
+└── renv/                        # Package management (auto-generated)
+```
 
 ## Troubleshooting
 
-- If you see an error like `Error in sink(type = "output") : invalid connection` before running Stan, try the following in the R session to close stray sinks and inspect the error:
+### "Command not found: xcode-select --install" (macOS)
 
-```r
-# close any open output sinks
-while (sink.number() > 0) sink(NULL)
-# close any open message sinks
-while (sink.number(type = "message") > 0) sink(NULL, type = "message")
-
-# show the call stack after an error
-traceback()
-
-# restart R to ensure a clean session (recommended)
+You need Xcode Command Line Tools. Run in Terminal:
+```bash
+xcode-select --install
 ```
 
-- If rstan complains about compilation or slow builds, ensure these options are set (they reduce recompilation and use multiple cores):
+Then wait for the installation to complete.
 
+### "Could not find function 'cmdstan_model'"
+
+This means cmdstanr didn't install. In R, run:
 ```r
-options(mc.cores = parallel::detectCores())
-rstan::rstan_options(auto_write = TRUE)
-rstan::rstan_options(threads_per_chain = 1)
+renv::restore()
 ```
 
-- If `renv::snapshot()` warns about missing packages, install those packages (or let `renv` install them during `renv::restore()`) before snapshotting again.
+Then restart R.
 
-## Running on a different machine (summary)
-1. Clone the repo.
-2. In R: `install.packages("renv")` then `renv::restore()`.
-3. Restart R.
-4. Set the `rstan` options shown above and run `source("DTA_Practical_v2.R")` or `Rscript`.
+### Model takes a very long time to compile
+
+This is normal the first time. The Stan model is being compiled to C++. Subsequent runs are much faster.
+
+### Results files don't appear
+
+Check:
+1. Is the script still running? (Look for messages in R console)
+2. Do you have write permission in the project folder?
+3. Look for error messages in red text — copy them to ask for help
+
+## Running Other Scripts
+
+The `scripts/` folder has helper scripts that create specific outputs:
+
+- `mu_table.R` — creates sensitivity/specificity tables
+- `league_table.R` — creates comparison league tables
+- `describe_dta_network.R` — summarizes your data
+
+These are automatically called by `DTA_Practical_v2.R`.
+
+## Questions?
+
+If something doesn't work:
+1. **Copy the error message** (the red text in R)
+2. **Note what step you were on**
+3. Ask your instructor or check the troubleshooting section above
+
+## For Instructors
+
+To update dependencies after changing code:
+```r
+renv::snapshot()  # Updates renv.lock with current packages
+```
+
+Commit `renv.lock` to version control so students get the same packages.
