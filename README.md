@@ -16,10 +16,12 @@ This practical teaches you how to fit Bayesian models to diagnostic test accurac
 
 You need:
 - **R** (version 4.5 or later) — download from [r-project.org](https://www.r-project.org/)
-- **Xcode Command Line Tools** (macOS only) — open Terminal and run:
-  ```bash
-  xcode-select --install
-  ```
+- **Compiler tools:**
+  - **macOS:** Xcode Command Line Tools — open Terminal and run:
+    ```bash
+    xcode-select --install
+    ```
+  - **Windows:** Rtools 4.5 or later — download from [cran.r-project.org/bin/windows/Rtools](https://cran.r-project.org/bin/windows/Rtools/)
 
 ### Step 2: Clone the Repository
 
@@ -85,14 +87,14 @@ Practical/
 
 ## Troubleshooting
 
-### "Command not found: xcode-select --install" (macOS)
+### Compiler tools not found (macOS/Windows)
 
-You need Xcode Command Line Tools. Run in Terminal:
+**macOS:** You need Xcode Command Line Tools. Run in Terminal:
 ```bash
 xcode-select --install
 ```
 
-Then wait for the installation to complete.
+**Windows:** You need Rtools 4.5 or later. Download from [cran.r-project.org/bin/windows/Rtools](https://cran.r-project.org/bin/windows/Rtools/) and install it.
 
 ### "Could not find function 'cmdstan_model'"
 
