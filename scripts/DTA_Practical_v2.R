@@ -73,13 +73,18 @@ gen_model_summary<-fit_model
 df2 <- as.data.frame(model_summary)
 
 # Add the parameter names as a separate column
-df2$title <- rownames(df2)
+df2$title <- df2$variable
 
-# Export the model summary as a semicolon-separated CSV-style text file
-write.table(
+# Export the model summary as a comma-separated CSV file
+write.csv(
   df2,
-  file = "Results_date.csv",
-  sep = ";")
+  file = paste0(
+    "Results_",
+    format(Sys.Date(), "%Y-%m-%d"),
+    ".csv"
+  ),
+  row.names = FALSE
+)
 
 # Save in excel formatted file
 writexl::write_xlsx(
@@ -109,7 +114,9 @@ save(
 #mu_table function
 results_table <- fit_model$summary(
   variables = c("MU"),
-  probs = c(0.025, 0.5, 0.975)
+  "mean", "median", "sd", "mad",
+  ~quantile(.x, probs = c(0.025, 0.5, 0.975)),
+  "rhat", "ess_bulk", "ess_tail"
 )
 
 mu_table(results_table)
@@ -119,7 +126,9 @@ mu_table(results_table)
 #het_table function
 results_table_het <- fit_model$summary(
   variables = c("tausq","sigmabsq"),
-  probs = c(0.025, 0.5, 0.975)
+  "mean", "median", "sd", "mad",
+  ~quantile(.x, probs = c(0.025, 0.5, 0.975)),
+  "rhat", "ess_bulk", "ess_tail"
 )
 
 results_table_het
@@ -129,7 +138,9 @@ het_table(results_table_het)
 #dor_table function
 results_table_DOR <- fit_model$summary(
   variables = c("DOR"),
-  probs = c(0.025, 0.5, 0.975)
+  "mean", "median", "sd", "mad",
+  ~quantile(.x, probs = c(0.025, 0.5, 0.975)),
+  "rhat", "ess_bulk", "ess_tail"
 )
 
 dor_table(results_table_DOR)
@@ -137,14 +148,18 @@ dor_table(results_table_DOR)
 #Superiority index
 Sk_index_table <- fit_model$summary(
   variables = c("S"),
-  probs = c(0.025, 0.5, 0.975)
+  "mean", "median", "sd", "mad",
+  ~quantile(.x, probs = c(0.025, 0.5, 0.975)),
+  "rhat", "ess_bulk", "ess_tail"
 )
 
 Sk_index_table
 #Create a LEAGUE TABLE------------------------------------
 results_table_league <- fit_model$summary(
   variables = c("RD"), #relative ratio (sens_test2/sens_test1)
-  probs = c(0.025, 0.5, 0.975)
+  "mean", "median", "sd", "mad",
+  ~quantile(.x, probs = c(0.025, 0.5, 0.975)),
+  "rhat", "ess_bulk", "ess_tail"
 )
 
 lt<-league_table_dta(dat,results_table_league)
@@ -171,11 +186,13 @@ fit_model$cmdstan_diagnose()
 
 #Results presentation------------------------------------
 library(ggplot2)
+results_table_df <- as.data.frame(results_table)
+
 results_table_df$outcome <- ifelse(
-  grepl("^MU\\[1,", rownames(results_table_df)),
+  grepl("^MU\\[1,", results_table_df$variable),
   "Sensitivity",
   ifelse(
-    grepl("^MU\\[2,", rownames(results_table_df)),
+    grepl("^MU\\[2,", results_table_df$variable),
     "Specificity",
     NA
   )
@@ -184,13 +201,13 @@ results_table_df$outcome <- ifelse(
 # Add a column with test number
 results_table_df$test <- paste0(
   "Test ",
-  sub("^MU\\[[12],([0-9]+)\\]$", "\\1", rownames(results_table_df))
+  sub("^MU\\[[12],([0-9]+)\\]$", "\\1", results_table_df$variable)
 )
 
 #make the test factor, in order to appear sorted in the forest plot
 results_table_df$test <- factor(
   results_table_df$test,
-  levels = paste0("Test ", sort(unique(as.integer(sub("^MU\\[[12],([0-9]+)\\]$", "\\1", rownames(results_table_df))))))
+  levels = paste0("Test ", sort(unique(as.integer(sub("^MU\\[[12],([0-9]+)\\]$", "\\1", results_table_df$variable)))))
 )
 
 #Create a forest plot
@@ -225,7 +242,7 @@ p
 
 #### Combined forest plot
 
-dodge <- position_dodge(width = 0)
+dodge <- position_dodge(width = 0.5)
 
 q <- ggplot(
   results_table_df,
@@ -238,7 +255,7 @@ q <- ggplot(
     group = outcome
   )
 ) +
-  geom_errorbarh(position = dodge, height = 0.15, linewidth = 1) +
+  geom_errorbar(position = dodge, width = 0.15, orientation = "y", linewidth = 1) +
   geom_point(position = dodge, size = 3) +
   coord_cartesian(xlim = c(0, 1)) +
   labs(
@@ -253,3 +270,4 @@ q <- ggplot(
   )
 
 q
+

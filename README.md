@@ -26,10 +26,12 @@ You need:
 ### Step 2: Clone the Repository
 
 ```bash
-git clone <repo-url>
-cd Practical
+git clone https://github.com/averoniki/practical.git
 ```
 
+```bash
+cd Practical
+```
 ### Step 3: Restore Project Packages
 
 Open R or RStudio in the project directory and run:
